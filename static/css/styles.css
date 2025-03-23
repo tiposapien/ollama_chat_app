@@ -274,3 +274,15 @@ img {
         font-size: 12px;
     }
 }
+.send-button-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.send-hint {
+    font-size: 12px;
+    color: #888; /* darker grey than background */
+    font-style: italic;
+}
