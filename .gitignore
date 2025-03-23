@@ -1,0 +1,6 @@
+__pycache__/
+.DS_Store
+.veollama_chat_app/
+flask_session
+chat_logs
+.env

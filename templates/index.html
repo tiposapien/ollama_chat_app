@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ollama Chat App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <!-- Marked for Markdown -->
+  <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Highlight.js for code highlighting -->
+  <link 
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+  <!-- Socket.IO -->
+  <script defer src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+</head>
+<body>
+  <div id="header">
+    <h1>Ollama Chat App</h1>
+  </div>
+
+  <div id="main-container">
+    <!-- Left Sidebar -->
+    <div id="chat-list">
+      <div class="sidebar-header">
+        <h2>Your Chats</h2>
+      </div>
+      <ul id="chat-logs"></ul>
+      <div id="chat-list-buttons">
+        <button id="delete-chat-button" class="btn" aria-label="Delete Selected Chat">Delete</button>
+        <button id="new-chat-button" class="btn" aria-label="Start a New Chat">New</button>
+      </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chat-area">
+      <div id="chat-box" class="chat-display"></div>
+
+      <!-- Input Area Form -->
+      <form id="chat-form">
+        <!-- Model Select Dropdown -->
+        <select id="model-select" class="select-model" aria-label="Select a Model">
+          <option value="">Select a model</option>
+        </select>
+
+        <!-- User Input -->
+        <textarea
+          id="message-input"
+          class="message-input"
+          placeholder="Type your message here..."
+          aria-label="Chat message input"
+          rows="3"
+          required
+        ></textarea>
+
+        <!-- Send Button -->
+        <button type="submit" id="send-button" class="btn send-button" aria-label="Send Message">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main JS (defer) -->
+  <script defer src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
+</html>
