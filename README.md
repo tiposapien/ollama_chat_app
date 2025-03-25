@@ -1,6 +1,6 @@
 # Ollama Chat App
 
-A Flask-based real-time chat interface leveraging **Socket.IO** for **real-time streaming** responses from the **Ollama API**. This app allows users to interact with AI models, maintain chat history, and manage conversation logs. The Ollama CLI is still required to manage models. 
+A Flask-based chat interface leveraging **Socket.IO** for **streaming** responses from the **Ollama API**. This app in intended to run locally along side Ollama and allows users to interact with LLM models, maintain chat history, and manage conversation logs. The Ollama CLI is still required to manage models. 
 
 ## About the developer  
 As a Data Engineer and Architect, web development falls in my 5th wheel of expertise. 90% of the app was build in ChatGPT o1. 
@@ -70,10 +70,10 @@ DEBUG_MODE=True
 - Session details stored in **<app_folder>/flask_session** folder (should be created if it doesn't exist. assumes permissions)
 - Chat logs stored in **<app_folder>/chat_logs** folder (should be created if it doesn't exist. assumes permissions)
 - Ollama must be running with desired models downloaded
+- App was developed and tested on MacOS, please feel free to provide feedback for other platforms. 
 
 
-
-### Development Mode
+### Launch
 
 ```bash
 python app.py
@@ -81,61 +81,6 @@ python app.py
 
 The app will start at `http://127.0.0.1:5000`.
 
-##
-
-## API Endpoints
-
-### Fetch Available Models
-
-```http
-GET /api/models
-```
-
-### Fetch Chat History
-
-```http
-GET /api/chat_history
-```
-
-### Fetch Chat Logs
-
-```http
-GET /api/chat_logs
-```
-
-### Load a Chat
-
-```http
-POST /api/load_chat
-Content-Type: application/json
-
-{
-    "filename": "chat_20240301_123456.json"
-}
-```
-
-### Update Chat Subject
-
-```http
-POST /api/update_chat_subject
-Content-Type: application/json
-
-{
-    "filename": "chat_20240301_123456.json",
-    "subject": "New Subject"
-}
-```
-
-### Delete a Chat
-
-```http
-POST /api/delete_chat
-Content-Type: application/json
-
-{
-    "filename": "chat_20240301_123456.json"
-}
-```
 
 ## Running Tests
 
@@ -157,7 +102,7 @@ pytest
 ollama_chat_app/
 ├── app.py              # Flask app entry point
 ├── config.py           # Configuration file
-├── .env                # Environment variables
+├── .env                # Environment variables and secrets
 ├── requirements.txt    # Dependencies
 ├── tests/              
 │   ├── test_api.py     # Test cases for the API endpoints 
