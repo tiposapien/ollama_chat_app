@@ -1,6 +1,6 @@
 # Ollama Chat App
 
-A Flask-based chat interface leveraging **Socket.IO** for **streaming** responses from the **Ollama API**. This app in intended to run locally along side Ollama and allows users to interact with LLM models, maintain chat history, and manage conversation logs. The Ollama CLI is still required to manage models. 
+A Flask-based chat interface leveraging **Socket.IO** for **streaming** responses from the **Ollama API**. This app in intended to be lightweight and run locally along side Ollama. It allows users to interact with LLM models, maintain chat history, and manage conversation logs. The Ollama CLI is still required to manage models. 
 
 ## About the developer  
 As a Data Engineer and Architect, web development falls in my 5th wheel of expertise. 90% of the app was build in ChatGPT o1. 
