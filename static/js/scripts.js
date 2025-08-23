@@ -1,3 +1,4 @@
+// Ensure DOMPurify is available (should be included via script tag in your HTML)
 document.addEventListener('DOMContentLoaded', () => {
     const chatBox = document.getElementById('chat-box');
     const messageInput = document.getElementById('message-input');
@@ -7,9 +8,85 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteChatButton = document.getElementById('delete-chat-button');
     const chatLogsList = document.getElementById('chat-logs');
 
+
     let selectedChatFilename = null;
     const socket = io();
 
+
+    if (messageInput) {
+        messageInput.addEventListener('paste', async function(event) {
+            event.preventDefault();
+            const clipboardData = event.clipboardData || window.clipboardData;
+            if (!clipboardData) return;
+
+            // Check for image
+            for (const item of clipboardData.items) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Insert image as base64 <img> tag
+                        const imgTag = `<img src="${e.target.result}" alt="pasted image" />`;
+                        insertHtmlAtCursor(imgTag);
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            }
+
+            // Check for file (non-image)
+            for (const item of clipboardData.items) {
+                if (item.kind === 'file' && !item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    // Insert a placeholder for the file
+                    const placeholder = `<span class="file-placeholder">[File: ${file.name}]</span>`;
+                    insertHtmlAtCursor(placeholder);
+                    // Optionally, handle the file (e.g., upload or process)
+                    handlePastedFile(file);
+                    return;
+                }
+            }
+
+            // Otherwise, paste as plain text
+            const text = clipboardData.getData('text/plain');
+            if (text) {
+                insertHtmlAtCursor(text);
+            }
+        });
+    }
+
+    // Helper to insert HTML at the cursor position in contenteditable
+    function insertHtmlAtCursor(html) {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+
+        const el = document.createElement('div');
+        el.innerHTML = html;
+        const frag = document.createDocumentFragment();
+        let node, lastNode;
+        while ((node = el.firstChild)) {
+            lastNode = frag.appendChild(node);
+        }
+        range.insertNode(frag);
+
+        // Move the cursor after the inserted content
+        if (lastNode) {
+            range.setStartAfter(lastNode);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+
+    // Placeholder for handling pasted files (non-images)
+    function handlePastedFile(file) {
+        // Implement your file upload/processing logic here (e.g., upload, parse, etc.)
+        // TODO: Handle file upload/processing.
+        console.log('Pasted file:', file);
+    }
+    
     /* ---- Loading Indicator ---- */
     let loadingIndicator = null;
     function showLoadingIndicator() {
@@ -31,21 +108,81 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ---- Error Handling ---- */
     function showError(message) {
+        // Create the error container if it doesn't exist
+        let errorContainer = document.getElementById('chat-error-container');
+        if (!errorContainer) {
+            errorContainer = document.createElement('div');
+            errorContainer.id = 'chat-error-container';
+            errorContainer.style.position = 'fixed';
+            errorContainer.style.top = '30px';
+            errorContainer.style.left = '50%';
+            errorContainer.style.transform = 'translateX(-50%)';
+            errorContainer.style.zIndex = '9999';
+            errorContainer.style.display = 'flex';
+            errorContainer.style.flexDirection = 'column';
+            errorContainer.style.gap = '10px';
+            document.body.appendChild(errorContainer);
+        }
+
+        // Create error message div
         const errorDiv = document.createElement('div');
-        errorDiv.classList.add('error-message');
-        errorDiv.textContent = message;
-        // Optional styling or fade-out
-        chatBox.appendChild(errorDiv);
+        errorDiv.classList.add('error-message', 'fancy-error');
+        errorDiv.style.display = 'flex';
+        errorDiv.style.alignItems = 'center';
+        errorDiv.style.padding = '14px 22px';
+        errorDiv.style.background = 'rgba(242,67,67,0.97)';
+        errorDiv.style.color = '#fff';
+        errorDiv.style.borderRadius = '8px';
+        errorDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.09)';
+        errorDiv.style.fontWeight = '600';
+        errorDiv.style.fontSize = '1rem';
+        errorDiv.style.gap = '12px';
+        errorDiv.style.maxWidth = '350px';
+        errorDiv.style.margin = '0 auto';
+        errorDiv.style.animation = 'error-slide-down 0.4s cubic-bezier(.17,.67,.58,1.39)';
+
+        // Icon
+        const icon = document.createElement('span');
+        icon.textContent = '⚠️';
+        icon.style.fontSize = '1.3em';
+        icon.style.marginRight = '6px';
+
+        // Error text
+        const textSpan = document.createElement('span');
+        textSpan.textContent = message;
+
+        // Dismiss button
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '×';
+        closeBtn.setAttribute('aria-label', 'Close');
+        closeBtn.style.background = 'none';
+        closeBtn.style.border = 'none';
+        closeBtn.style.color = '#fff';
+        closeBtn.style.fontSize = '1.2em';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.style.marginLeft = 'auto';
+        closeBtn.addEventListener('click', () => {
+            errorDiv.remove();
+        });
+
+        errorDiv.appendChild(icon);
+        errorDiv.appendChild(textSpan);
+        errorDiv.appendChild(closeBtn);
+
+        errorContainer.appendChild(errorDiv);
+
+        // Auto-dismiss after 4.5 seconds
         setTimeout(() => {
             if (errorDiv.parentNode) {
                 errorDiv.parentNode.removeChild(errorDiv);
             }
-        }, 3000);
+        }, 4500);
     }
     /* ------------------------ */
 
     // Load models (async/await)
     async function loadModels() {
+        showLoadingIndicator();
         try {
             const response = await fetch('/api/models');
             if (!response.ok) throw new Error('Failed to fetch models.');
@@ -60,11 +197,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error fetching models:', error);
             showError('Error fetching models');
+        } finally {
+            hideLoadingIndicator();
         }
     }
 
     // Load chat logs (async/await)
     async function loadChatLogs() {
+        showLoadingIndicator();
         try {
             const response = await fetch('/api/chat_logs');
             if (!response.ok) throw new Error('Failed to fetch chat logs.');
@@ -91,6 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error fetching chat logs:', error);
             showError('Error fetching chat logs');
+        } finally {
+            hideLoadingIndicator();
         }
     }
 
@@ -156,10 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await res.json();
             if (data.status) {
-                listItem.textContent = newSubject || 'Untitled Chat';
-                listItem.dataset.subject = newSubject || 'Untitled Chat';
-                listItem.addEventListener('click', () => selectChat(listItem));
-                listItem.addEventListener('dblclick', () => makeListItemEditable(listItem));
+                // Instead of updating the list item directly (which could cause duplicate listeners), refresh the chat logs
+                loadChatLogs();
             } else {
                 showError('Failed to update subject.');
             }
@@ -226,25 +366,38 @@ document.addEventListener('DOMContentLoaded', () => {
         sendMessage();
     });
 
-    // SHIFT+Enter to send
-    messageInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
+    // Only ONE keydown event listener for messageInput, per instructions
+    if (messageInput) {
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                if (e.shiftKey) {
+                    // Let browser insert newline
+                    return;
+                } else {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            }
+        });
+    }
 
     // Send message
     function sendMessage() {
-        const message = messageInput.value.trim();
+        const message = messageInput.innerHTML
+            .replace(/<br\s*\/?>/gi, '')
+            .trim();
+        // Prevent sending empty message (with only whitespace or line breaks)
+        if (!message || !message.replace(/&nbsp;|<[^>]*>/g, '').trim()) {
+            return;
+        }
         const selectedModel = modelSelect.value;
         if (!selectedModel) {
-            alert("Please select a model.");
+            showError("Please select a model.");
             return;
         }
         if (message) {
             addMessageToChat('User', message);
-            messageInput.value = '';
+            messageInput.innerHTML = '';
             // Show waiting indicator
             showLoadingIndicator();
 
@@ -268,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lastBotMessage.setAttribute('data-updating', 'true');
         }
         let html = marked.parse(content);
+        html = DOMPurify.sanitize(html);
         html = transformCustomTags(html);
         lastBotMessage.innerHTML = html;
 
@@ -289,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('error', data => {
         console.error('Socket Error:', data.error);
         showError(data.error);
+        hideLoadingIndicator();
     });
 
     // Add a message bubble to chat
@@ -297,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.classList.add('message-bubble', sender === 'User' ? 'user-message' : 'bot-message');
 
         let html = marked.parse(message);
+        html = DOMPurify.sanitize(html);
         html = transformCustomTags(html);
         messageElement.innerHTML = html;
 
